@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Basic Page Needs -->
+    <meta charset="utf-8">
+    <title> Using Overleaf with Zotero </title>
+    <!-- Mobile Specific Metas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- FONT -->
+	  <link href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:100" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/normalize.css">
+    <link rel="stylesheet" href="../css/skeleton.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../images/favicon.ico">
+  </head>
+  <body>
+    <!-- Primary Page Layout -->
+    <div class="container" style="margin-top: 10%">
+      <div class="row">
+        <div class="eight columns">
+          <h5 style="color: #6699ff;">Using Overleaf with Zotero</h5>
+          <h6> 2019-07-05 </h6>
+        </div>
+      </div>
+      <br>
+      <div class="row">
+        <div class="ten columns">
+          <p><a href="https://www.overleaf.com">Overleaf</a> is an online latex editor that allows collaboration, and I don't think there is an alternative to it at the moment. <a href="https://www.zotero.org">Zotero</a> is one of those bibliography management tools; although other alternatives exist, I find it the most intuitive. </p>
+          <p>The way to import Zotero references into Overleaf is to create a <code>.bib</code> file from your personal Zotero library, which contains references from all your collections and can be refreshed to sync any changes you made to your personal library <a href="https://libanswers.caltech.edu/faq/204206">[1]</a>. But there is no way to import only from a single collection or a Zotero group library. When multiple people want to use a Zotero group to track the references and an Overleaf project for collaborative writing, unless they are okay with large <code>.bib</code> files, they would need to manually export the group library into a <code>.bib</code> file and upload it to their Overleaf project to keep things in sync.</p>
+          <p>But I really want to use Overleaf with Zotero groups! If you have the same thought and have <a href="https://www.python.org">Python</a> installed, the following workaround could be helpful:</p>
+          <ol>
+            <li>Git clone your Overleaf project as a git repository locally <a href="https://www.overleaf.com/blog/195-new-collaborate-online-and-offline-with-overleaf-and-git-beta">[2]</a>.</li>
+            <p>Open your Overleaf project in a browser and click open <em>Menu</em>. Under <em>Sync</em>, click open <em>Git</em>. This will open a pop-up that tells you how to <code>git clone</code> your project. Then run this command from the command line; follow the linked tutorial to complete the process.</p>
+            <li>Write a script that can automatically read a Zotero group library and export it to <code>.bib</code>. </li>
+            <p>I followed <a href="https://pyzotero.readthedocs.io/en/latest/index.html?highlight=bibtex#search-request-parameters-for-read-api-calls">[3]</a> (about how to obtain api key and libray id) and <a href="https://bibtexparser.readthedocs.io/en/v0.6.2/bibtexparser.html#bibtexparser.dump">[4]</a>. Below is the Python script <code>output_bib.py</code>:</p>
+<xmp>from pyzotero import zotero
+import bibtexparser
+
+api_key = 'REPLACE: your own api key'
+library_id = 'REPLACE: your own library id'
+library_type = 'group'
+
+zot = zotero.Zotero(library_id, library_type, api_key)
+zot.add_parameters(format='bibtex', style='REPLACE: your own style')
+bib_db = zot.top()
+
+with open('references.bib', 'w') as bibtex_file:
+    bibtexparser.dump(bib_db, bibtex_file)
+</xmp>
+          <p>The dependencies can be installed from command line with</p>
+<xmp>pip install pyzotero
+pip install bibtexparser
+</xmp>
+            <li>Use the job scheduler on your OS to run the previous script regularly and push to git. </li> 
+            <p>I'm on Mac OS, so I followed <a href="https://alvinalexander.com/mac-os-x/mac-osx-startup-crontab-launchd-jobs">[5]</a> (tutorial on <em>launchd</em>). Below is the plist file <code>com.myx.pushbibupdates.plist</code>:</p>
+<xmp><?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.myx.pushbibupdates</string> <!-- replace the name! -->
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>sh /REPLACE/path/to/push_bib_updates.sh</string>
+  </array>
+
+  <key>StartInterval</key>
+  <integer>43200</integer> <!-- 12 hours -->
+
+  <key>StandardErrorPath</key>
+  <string>/tmp/PushBibUpdates1.err</string>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/PushBibUpdates1.out</string>
+</dict>
+</plist>
+</xmp>
+            <p>And the shell script <code>push_bib_updates.sh</code>: </p>
+<xmp>git pull
+python3 output_bib.py
+git add references.bib
+git commit -m "routine: push bib updates (if any)"
+git push
+</xmp>
+            <p>Now we are ready to schedule this task. Note that in my case the shell script and the Python script live in the git repository, and the plist file lives in <code>$HOME\Library\LaunchAgents</code>. As the linked tutorial shows, we can use the following commands to load and unload the task (specific to my case):</p>
+<xmp>launchctl load com.myx.pushbibupdates.plist
+launchctl list | grep 'myx'
+launchctl unload com.myx.pushbibupdates.plist
+launchctl list | grep 'myx'
+</xmp>
+          </ol>
+          <br>
+          <p><em>That's it!</em></p> 
+          <p>Finally, this is a very simple workaround with absolutely no error handling. If you intend to try it, please be very careful! </p>
+        </div>
+      </div>
+      <br>
+      <a style="margin-botton: 16px;" class="button" href="overview.html">Blog Home.</a>
+      <a style="margin-botton: 16px;" class="button" href="#">Prev: None.</a>
+      <a style="margin-botton: 16px;" class="button" href="#">Next: None.</a>
+    </div>
+  <!-- End Document -->
+  </body>
+</html>
