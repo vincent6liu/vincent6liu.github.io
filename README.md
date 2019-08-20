@@ -3,4 +3,4 @@
 [Skeleton CSS](http://getskeleton.com/)  
 [Google Fonts](https://fonts.google.com/)  
 
-Original design by @merlinyx
+Original design by [@merlinyx](https://github.com/merlinyx)
