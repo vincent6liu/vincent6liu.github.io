@@ -1,7 +1,5 @@
-# Personal website. 11/15/2018
-Included images and links.
+# Personal website. 
 
-# 9/19/2017
-Plan to include some pictures and an ideas page. I want to spread my thoughts. 
-Add tri-lingual support. 
-Ensure universal accessibility if possible. 
+[Normalize CSS](https://necolas.github.io/normalize.css/)  
+[Skeleton CSS](http://getskeleton.com/)  
+[Google Fonts](https://fonts.google.com/)  
